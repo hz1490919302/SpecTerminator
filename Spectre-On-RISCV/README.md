@@ -7,3 +7,5 @@ The following Spectre attacks are implemented within the repo.
 * SpectreRemind
 * Spectre-fsqrt
 * Spectre-TLB
+
+Make sure you have the riscv64-unknown-elf-gcc compiler. Run make all in this directory to generate RISC-V binaries.
