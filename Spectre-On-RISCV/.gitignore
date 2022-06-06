@@ -1,0 +1,6 @@
+bin/*
+dep/*
+obj/*
+dump/*
+*/*.swp
+*.swp
