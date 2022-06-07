@@ -1,0 +1,10 @@
+{
+  "name" : "spec6-int",
+  "base" : "br-base.json",
+  "rootfs-size" : "16000MB",
+  "files" : [ ["471.omnetpp", "/"], ["473.astar", "/"], ["483.xalancbmk", "/"], ["401.bzip2", "/"], ["400.perlbench", "/"], ["commands", "/"], ["403.gcc", "/"], ["429.mcf", "/"], ["445.gobmk", "/"], ["456.hmmer", "/"], ["458.sjeng", "/"], ["462.libquantum", "/"], ["464.h264ref", "/"] ],
+  "spike" : "/home/centos/firesim/target-design/chipyard/riscv-tools-install/bin/spike",
+  "run" : "run.sh",
+  "outputs" : [ "/output","uartlog","synthesized-prints.out0" ],
+  "mem" : "16GiB"
+}

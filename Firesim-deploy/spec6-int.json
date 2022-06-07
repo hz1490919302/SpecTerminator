@@ -1,0 +1,13 @@
+{
+	"benchmark_name": "spec6-int",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../target-design/chipyard/software/firemarshal/images/spec6-int-bin",
+	"common_rootfs": "../../../target-design/chipyard/software/firemarshal/images/spec6-int.img",
+	"common_outputs": [
+		"/output",
+		"uartlog",
+		"synthesized-prints.out0"
+	]
+}
