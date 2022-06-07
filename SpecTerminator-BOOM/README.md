@@ -9,4 +9,4 @@ Author: Jerry Zhao <jerryz123@berkeley.edu>
 Date:   Tue Jan 19 19:03:21 2021 -0800
 
 
-We implemented SpecTerminator based on this version.
+We implemented SpecTerminator based on this BOOM version.
