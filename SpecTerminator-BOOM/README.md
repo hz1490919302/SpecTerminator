@@ -1,4 +1,4 @@
-Started BOOM branch info:
+Started chipyard branch info:
 
 commit a7652ceea479a804bee364b0981d58497dc60a06 (HEAD)
 
@@ -9,4 +9,4 @@ Author: Jerry Zhao <jerryz123@berkeley.edu>
 Date:   Tue Jan 19 19:03:21 2021 -0800
 
 
-We implemented SpecTerminator based on this BOOM version.
+We implemented SpecTerminator based on this chipyard/boom version.
