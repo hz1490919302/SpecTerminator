@@ -358,7 +358,7 @@ trait RISCVConstants
  */
 trait ExcCauseConstants
 {
-  // a memory disambigious misspeculation occurred  内存歧义错误猜测发生
+  // a memory disambigious misspeculation occurred
   val MINI_EXCEPTION_MEM_ORDERING = 16.U
 
   require (!freechips.rocketchip.rocket.Causes.all.contains(16))

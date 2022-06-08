@@ -429,13 +429,12 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
 
   val wb = Module(new BoomWritebackUnit)
   val prober = Module(new BoomProbeUnit)
-  val mshrs = Module(new BoomMSHRFile)  //cache的失效状态保存寄存器
+  val mshrs = Module(new BoomMSHRFile)
   mshrs.io.clear_all    := io.lsu.force_order
   mshrs.io.brupdate       := io.lsu.brupdate
   mshrs.io.exception    := io.lsu.exception
   mshrs.io.rob_pnr_idx  := io.lsu.rob_pnr_idx
   mshrs.io.rob_head_idx := io.lsu.rob_head_idx
-
 
   // tags
   def onReset = L1Metadata(0.U, ClientMetadata.onReset)
@@ -489,62 +488,6 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
     dataReadArb.io.in(2).bits.valid(w)      := io.lsu.req.bits(w).valid
     dataReadArb.io.in(2).bits.req(w).addr   := io.lsu.req.bits(w).bits.addr
     dataReadArb.io.in(2).bits.req(w).way_en := ~0.U(nWays.W)
-
-   /* when(io.lsu.req.bits(w).bits.uop.debug_pc === 0x00081f74L.U){
-     printf(p" cycles=${io.lsu.idle_cycles } ")
-     printf("81f74 out.ready=${metaReadArb.io.out.ready}\n")  
-}
- when(io.lsu.req.bits(w).bits.uop.debug_pc === 0x00081f78L.U){
-     printf(p" cycles=${io.lsu.idle_cycles } ")
-     printf("81f78 out.ready=${metaReadArb.io.out.ready}\n")
-}
- when(io.lsu.req.bits(w).bits.uop.debug_pc === 0x00081f7cL.U){
-     printf(p" cycles=${io.lsu.idle_cycles } ")
-     printf("81f7c out.ready=${metaReadArb.io.out.ready}\n")
-}
- when(io.lsu.req.bits(w).bits.uop.debug_pc === 0x00081f7eL.U){
-     printf(p" cycles=${io.lsu.idle_cycles } ")
-     printf("81f7e out.ready=${metaReadArb.io.out.ready}\n")
-}
-
-    when(io.lsu.req.bits(w).bits.uop.debug_pc(31,0) === 0x00082022L.U){
-      printf(p" cycles=${io.lsu.idle_cycles } ")
-      printf(p" lsu.req.valid=${io.lsu.req.valid}" )
-      printf(p" lsu.req.ready=${io.lsu.req.ready}" )
-      printf(p" metaout.ready=${metaReadArb.io.out.ready}")
-      printf(p" dataout.ready=${dataReadArb.io.out.ready}")
-      printf(p" 1=${metaReadArb.io.in(4).ready}" )
-      printf(p" 2=${dataReadArb.io.in(2).ready}" )
-      printf(p" 1=${metaReadArb.io.in(4).valid}" )
-      printf(p" 2=${dataReadArb.io.in(2).valid}" )
-       printf(p" 0=${metaReadArb.io.in(0).ready}" )
- printf(p" 0=${metaReadArb.io.in(0).valid}" )
-      printf(p" 0=${dataReadArb.io.in(0).ready}" )
- printf(p" 0=${dataReadArb.io.in(0).valid}" )
- printf(p" 1=${metaReadArb.io.in(1).ready}" )
- printf(p" 1=${metaReadArb.io.in(1).valid}" )
-      printf(p" 1=${dataReadArb.io.in(1).ready}" )
- printf(p" 1=${dataReadArb.io.in(1).valid}" )
- printf(p" 2=${metaReadArb.io.in(2).ready}" )
- printf(p" 2=${metaReadArb.io.in(2).valid}" )
-      printf(p" 2=${dataReadArb.io.in(2).ready}" )
- printf(p" 2=${dataReadArb.io.in(2).valid}" )
- printf(p" 3=${metaReadArb.io.in(3).ready}" )
- printf(p" 3=${metaReadArb.io.in(3).valid}" )
-      printf(p" 4=${metaReadArb.io.in(4).ready}" )
- printf(p" 4=${metaReadArb.io.in(4).valid}" )
-printf(p" 5=${metaReadArb.io.in(5).ready}" )
-printf(p" 5=${metaReadArb.io.in(5).valid}" )
-      printf(p" lsu.req.fire=${io.lsu.req.fire}" )
-      printf(p"find lsu dmem(cache)-new-request-82022\n")
-    }*/
-   /*
-    when(io.lsu.req.bits(w).bits.uop.debug_inst(31,0) === 0x0007c783L.U) {
-      printf(p" cycles=${io.lsu.idle_cycles} ")
-      printf(p" lsu.req.valid=${io.lsu.req.valid}" )
-      printf(p"find lsu dmem(cache)-new-request-92\n")
-    }*/
-
   }
 
   // ------------
@@ -603,13 +546,8 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
   wb.io.data_req.ready  := metaReadArb.io.in(2).ready && dataReadArb.io.in(1).ready
   //assert(!(wb.io.meta_read.fire() ^ wb.io.data_req.fire()))
 
-  when(wb_fire && wb_req(0).uop.debug_pc === 0x00082022L.U){
-    //printf(p" 82022 lsu wb-fire =true \n")
-  }
-
-
   // -------
-  // Prober(探查)
+  // Prober
   val prober_fire  = prober.io.meta_read.fire()
   val prober_req   = Wire(Vec(memWidth, new BoomDCacheReq))
   prober_req             := DontCare
@@ -622,11 +560,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
   metaReadArb.io.in(1).bits.req(0) := prober.io.meta_read.bits
   prober.io.meta_read.ready := metaReadArb.io.in(1).ready
   // Prober does not need to read data array
-
-  when(prober_fire&&prober_req(0).uop.debug_pc===0x00082022L.U){
-    //printf(p"82022  lsu prober-fire =true \n")
-  }
-
 
   // -------
   // Prefetcher
@@ -641,10 +574,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
   metaReadArb.io.in(5).bits.req(0).tag    := DontCare
   mshrs.io.prefetch.ready := metaReadArb.io.in(5).ready
   // Prefetch does not need to read data array
-
-  when(prefetch_fire&&prefetch_req(0).uop.debug_pc===0x00082022L.U){
-    //printf(p"82022 lsu prefetch_fire =true \n")
-  }
 
   val s0_valid = Mux(io.lsu.req.fire(), VecInit(io.lsu.req.bits.map(_.valid)),
                  Mux(mshrs.io.replay.fire() || wb_fire || prober_fire || prefetch_fire || mshrs.io.meta_read.fire(),
@@ -661,12 +590,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
                  Mux(prefetch_fire            , t_prefetch,
                  Mux(mshrs.io.meta_read.fire(), t_mshr_meta_read
                                               , t_replay)))))
-  when(s0_req(0).uop.debug_pc===0x00082022L.U){
-     /*printf(p"s0_valid=${s0_valid}" )
-     printf(p"s0_type=${s0_type}" )
-     printf(p"io.lsu.req.fire=${io.lsu.req.fire}" )
-     printf(p"82022 s0_valid\n")*/
-  }
 
   // Does this request need to send a response or nack
   val s0_send_resp_or_nack = Mux(io.lsu.req.fire(), s0_valid,
@@ -683,13 +606,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
                          !(io.lsu.exception && s0_req(w).uop.uses_ldq)   &&
                          !(s2_store_failed && io.lsu.req.fire() && s0_req(w).uop.uses_stq),
                          init=false.B))
-
-
-  when(s1_req(0).uop.debug_pc===0x00082022L.U){
-     //printf(p"s1_valid=${s1_valid}" )
-     //printf(p"82022 s1_valid\n")
-}
-
   for (w <- 0 until memWidth)
     assert(!(io.lsu.s1_kill(w) && !RegNext(io.lsu.req.fire()) && !RegNext(io.lsu.req.bits(w).valid)))
   val s1_addr         = s1_req.map(_.addr)
@@ -720,12 +636,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
                          !IsKilledByBranch(io.lsu.brupdate, s1_req(w).uop) &&
                          !(io.lsu.exception && s1_req(w).uop.uses_ldq) &&
                          !(s2_store_failed && (s1_type === t_lsu) && s1_req(w).uop.uses_stq)))
-
-   when(s2_req(0).uop.debug_pc===0x00082022L.U){
-      //printf(p"s2_valid=${s2_valid}" )
-      //printf(p"82022 s2_valid\n")
-}
-
   for (w <- 0 until memWidth)
     s2_req(w).uop.br_mask := GetNewBrMask(io.lsu.brupdate, s1_req(w).uop)
 
@@ -830,9 +740,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
   // If MSHR is available and this is only a store(not a amo), we don't need to wait for resp later
   s2_store_failed := s2_valid(0) && s2_nack(0) && s2_send_nack(0) && s2_req(0).uop.uses_stq
 
-  val misscachenum = RegInit(0.U(40.W))
-  io.lsu.missnum := misscachenum
-
   // Miss handling
   for (w <- 0 until memWidth) {
     val pdst_risk = Mux(s2_req(w).uop.dst_rtype === RT_FIX, io.lsu.risk_table(s2_req(w).uop.pdst), Mux(s2_req(w).uop.dst_rtype === RT_FLT, io.lsu.fp_risk_table(s2_req(w).uop.pdst), false.B) )
@@ -875,38 +782,7 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
 
   mshrs.io.meta_resp.valid      := !s2_nack_hit(0) || prober.io.mshr_wb_rdy
   mshrs.io.meta_resp.bits       := Mux1H(s2_tag_match_way(0), RegNext(meta(0).io.resp))
-  when (mshrs.io.req.map(_.fire()).reduce(_||_)) {                   //cache匹配只需要两个周期
-    //mshrs.io.req(0).bits.uop.cachemiss := true.B
-    //s2_req(0).uop.cachemiss := true.B
-
-    val tempmisscachenum = misscachenum
-    misscachenum := tempmisscachenum + 1.U
-    
-    for(w <- 0 until memWidth) {
-
-      when(s2_req(w).uop.debug_pc === 0x80001292L.U) {
-        printf(p" pdst=${s2_req(w).uop.pdst} ")
-        printf(p" mask=${s2_req(w).uop.br_mask} ")
-        printf(p" prs1-risk=${io.lsu.risk_table(s2_req(w).uop.prs1)} ")
-        printf(p" prs2-risk=${io.lsu.risk_table(s2_req(w).uop.prs2)} ")
-        printf(p" pdst-risk=${io.lsu.risk_table(s2_req(w).uop.pdst)} ")
-        printf(p" cycles=${io.lsu.idle_cycles} ")
-        printf(p"find lsu replace=true 80001292\n")
-      }/*
-      when(s2_req(w).uop.debug_inst === 0x0007c783L.U) {
-        printf(p" pdst=${s2_req(w).uop.pdst} ")
-        printf(p" pdst=${s2_req(w).uop.prs1} ")
-        printf(p" pdst=${s2_req(w).uop.prs2} ")
-        printf(p" mask=${s2_req(w).uop.br_mask} ")
-        printf(p" prs1-risk=${io.lsu.risk_table(s2_req(w).uop.prs1)} ")
-        printf(p" prs2-risk=${io.lsu.risk_table(s2_req(w).uop.prs2)} ")
-        printf(p" pdst-risk=${io.lsu.risk_table(s2_req(w).uop.pdst)} ")
-        printf(p" fp_val=${s2_req(w).uop.fp_val} ")
-        printf(p" cycles=${io.lsu.idle_cycles} ")
-        printf(p"find lsu replace=true 92\n")
-      }*/
-    }
-    replacer.miss }    //发生mshrs fire(cache未命中)时，cache随机替换
+  when (mshrs.io.req.map(_.fire()).reduce(_||_)) { replacer.miss }
   tl_out.a <> mshrs.io.mem_acquire
 
   // probes and releases
@@ -919,10 +795,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
   prober.io.mshr_rdy    := mshrs.io.probe_rdy
   prober.io.wb_rdy      := (prober.io.meta_write.bits.idx =/= wb.io.idx.bits) || !wb.io.idx.valid
   mshrs.io.prober_state := prober.io.state
-
-  when(prober.io.req.valid){
-    //printf(" prober.io.req.valid=true.B \n")
-  }
 
   // refills
   when (tl_out.d.bits.source === cfg.nMSHRs.U) {
@@ -975,58 +847,6 @@ printf(p" 5=${metaReadArb.io.in(5).valid}" )
     cache_resp(w).bits.uop      := s2_req(w).uop
     cache_resp(w).bits.data     := loadgen(w).data | s2_sc_fail
     cache_resp(w).bits.is_hella := s2_req(w).is_hella
-
-    /*when(s2_req(w).uop.debug_pc === 0x00082022L.U){
-      printf(p" cycles=${io.lsu.idle_cycles} ")
-      printf(p" s2_valid=${s2_valid(w)} ")
-      printf(p" s2_send_resp=${s2_send_resp(w)} ")
-      printf(p" 0=${s1_valid(w)}" )
-      printf(p" 1=${!io.lsu.s1_kill(w)}" )
-      printf(p" 2=${!IsKilledByBranch(io.lsu.brupdate, s1_req(w).uop)}" )
-      printf(p" 3=${!(io.lsu.exception && s1_req(w).uop.uses_ldq)}" )
-      printf(p" 4=${!(s2_store_failed && (s1_type === t_lsu) && s1_req(w).uop.uses_stq)}" )
-      printf(p" 0=${RegNext(s1_send_resp_or_nack(w))}" )
-      printf(p" 1=${!s2_nack(w)}" )
-      printf(p" 2=${ (s2_hit(w) || (mshrs.io.req(w).fire() && isWrite(s2_req(w).uop.mem_cmd) && !isRead(s2_req(w).uop.mem_cmd)))}" )
-printf(p" 3-1=${s2_hit(w)}" )
-printf(p" 3-2=${mshrs.io.req(w).fire()}" )
-printf(p" 3-3=${isWrite(s2_req(w).uop.mem_cmd)}" )
-printf(p" 3-4=${!isRead(s2_req(w).uop.mem_cmd)}" )
-
-
-//      printf(p" loadgen(w).data=${loadgen(w).data} ")
-//     printf(p" cache_resp=${s2_valid(w) && s2_send_resp(w)} ")
-      printf(p"cache-resp 82022\n")
-    }
-    when(s2_req(w).uop.debug_inst === 0x0007c783L.U && s2_valid(w) && s2_send_resp(w)){
-      printf(p" cycles=${io.lsu.idle_cycles} ")
-      printf(p" loadgen(w).data=${loadgen(w).data} ")
-      printf(p" cache_resp=${s2_valid(w) && s2_send_resp(w)} ")
-      printf(p"find lsu dmem-cache-resp 92\n")
-    }*/
-
-      /*when(s2_req(w).uop.debug_inst === 0x00054783L.U  && s2_valid(w) && s2_send_resp(w)) {
-        printf(p" pdst=${s2_req(w).uop.pdst} ")
-        printf(p" mask=${s2_req(w).uop.br_mask} ")
-        printf(p" prs1-risk=${io.lsu.risk_table(s2_req(w).uop.prs1)} ")
-        printf(p" prs2-risk=${io.lsu.risk_table(s2_req(w).uop.prs2)} ")
-        printf(p" pdst-risk=${io.lsu.risk_table(s2_req(w).uop.pdst)} ")
-        printf(p" fp_val=${s2_req(w).uop.fp_val} ")
-        printf(p" cycles=${io.lsu.idle_cycles} ")
-        printf(p"find lsu dmem-cache-resp 84\n")
-      }
-      when(s2_req(w).uop.debug_inst === 0x0007c783L.U  && s2_valid(w) && s2_send_resp(w)) {
-        printf(p" pdst=${s2_req(w).uop.pdst} ")
-        printf(p" mask=${s2_req(w).uop.br_mask} ")
-        printf(p" prs1-risk=${io.lsu.risk_table(s2_req(w).uop.prs1)} ")
-        printf(p" prs2-risk=${io.lsu.risk_table(s2_req(w).uop.prs2)} ")
-        printf(p" pdst-risk=${io.lsu.risk_table(s2_req(w).uop.pdst)} ")
-        printf(p" fp_val=${s2_req(w).uop.fp_val} ")
-        printf(p" cycles=${io.lsu.idle_cycles} ")
-        printf(p"find lsu dmem-cache-resp 92\n")
-      }*/
-
-
   }
 
   val uncache_resp = Wire(Valid(new BoomDCacheResp))
@@ -1082,30 +902,7 @@ printf(p" 3-4=${!isRead(s2_req(w).uop.mem_cmd)}" )
     }
         io.lsu.nack(w).bits  := UpdateBrMask(io.lsu.brupdate, s2_req(w))
 
-
-
-
     //assert(!(io.lsu.nack(w).valid && s2_type =/= t_lsu))
-
-    /*when(resp(w).bits.uop.debug_inst === 0x00054783L.U && resp(w).valid &&
-      !(io.lsu.exception && resp(w).bits.uop.uses_ldq) &&
-      !IsKilledByBranch(io.lsu.brupdate, resp(w).bits.uop) && mshrs.io.resp.ready){
-      printf(p" cycles=${io.lsu.idle_cycles} ")
-      printf(p" ucache_resp=${resp(w).valid &&
-        !(io.lsu.exception && resp(w).bits.uop.uses_ldq) &&
-        !IsKilledByBranch(io.lsu.brupdate, resp(w).bits.uop) && mshrs.io.resp.ready} ")
-      printf(p"find lsu dmem-ucache-resp 84\n")
-    }
-    when(resp(w).bits.uop.debug_pc === 0x00082022L.U && resp(w).valid &&
-      !(io.lsu.exception && resp(w).bits.uop.uses_ldq) &&
-      !IsKilledByBranch(io.lsu.brupdate, resp(w).bits.uop) && mshrs.io.resp.ready){
-      printf(p" cycles=${io.lsu.idle_cycles} ")
-      printf(p" ucache_resp=${resp(w).valid &&
-        !(io.lsu.exception && resp(w).bits.uop.uses_ldq) &&
-        !IsKilledByBranch(io.lsu.brupdate, resp(w).bits.uop) && mshrs.io.resp.ready} ")
-      printf(p"find lsu dmem-ucache-resp 82022\n")
-    }*/
-
   }
 
   // Store/amo hits

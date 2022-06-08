@@ -92,7 +92,7 @@ class ExecutionUnits(val fpu: Boolean)(implicit val p: Parameters) extends HasBo
 
 
   lazy val jmp_unit_idx = {
-    exe_units.indexWhere(_.hasJmpUnit)            //找到满足某个谓词的第一个元素的索引。
+    exe_units.indexWhere(_.hasJmpUnit)
   }
 
   lazy val rocc_unit = {

@@ -722,8 +722,6 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
     // lock in that it's actually a branch and will fire, so we update
     // the branch_masks.
     val will_fire = Input(Vec(pl_width, Bool()))
-    
-    val rob_mask = Input(Vec(32,UInt(32.W)))
 
     // give out tag immediately (needed in rename)
     // mask can come later in the cycle
@@ -772,11 +770,10 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
   // Give out the branch mask to each micro-op
   // (kill off the bits that corresponded to branches that aren't going to fire)
 
-  
   var curr_mask = branch_mask
   for (w <- 0 until pl_width) {
     io.br_mask(w) := GetNewBrMask(io.brupdate, curr_mask)
-    curr_mask = Mux(io.will_fire(w), tag_masks(w) | curr_mask, curr_mask)   
+    curr_mask = Mux(io.will_fire(w), tag_masks(w) | curr_mask, curr_mask)
   }
 
   //-------------------------------------------------------------
@@ -785,23 +782,10 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
   when (io.flush_pipeline) {
     branch_mask := 0.U
   } .otherwise {
-   /* val mask = Mux(io.brupdate.b2.mispredict,
-      io.rob_mask(io.brupdate.b2.uop.rob_idx),
-      ~(0.U(maxBrCount.W)))
-      //io.brupdate.b2.uop.br_mask*/
     val mask = Mux(io.brupdate.b2.mispredict,
       io.brupdate.b2.uop.br_mask,
       ~(0.U(maxBrCount.W)))
-      //
-      
     branch_mask := GetNewBrMask(io.brupdate, curr_mask) & mask
-    when(io.brupdate.b2.uop.debug_pc === 0x80001bc2L.U){
-        printf(p"dispatch decode curr_mask1=${curr_mask} ")
-        printf(p"io.br_mask(w)=${GetNewBrMask(io.brupdate, curr_mask)} ")
-        printf(p"tag_masks=${tag_masks(0)} ")
-        printf(p"allocate_mask=${allocate_mask} ")
-        printf(p"branch_mask=${branch_mask} \n")
-    }
   }
 
   io.debug_branch_mask := branch_mask

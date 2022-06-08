@@ -83,18 +83,20 @@ class MicroOp(implicit p: Parameters) extends BoomBundle
   val prs2             = UInt(maxPregSz.W)
   val prs3             = UInt(maxPregSz.W)
   val ppred            = UInt(log2Ceil(ftqSz).W)
-  val comefrom_rob     = Bool()
-  val comefrom_rob1    = Bool()
+  
+  // used to mark the speculative type of registers (two source registers), including branch speculative, store speculative
   val risk1            = Bool()
   val risk2            = Bool()
   val risk3            = Bool()
   val risk4            = Bool()
-  val riskstore_after_load    = Bool()
 
+  //  For testing: statistical performance and cache miss rate, etc.
   val cachemiss = Bool()
   val execycle = UInt(50.W)
   val discycle = UInt(50.W)
   val validexecycle = Bool()
+  
+  // Used to mark load-load reordering failure or STL sorting failure
   val orderfailstq = UInt(4.W)
   val orderfailldq = UInt(4.W)
 

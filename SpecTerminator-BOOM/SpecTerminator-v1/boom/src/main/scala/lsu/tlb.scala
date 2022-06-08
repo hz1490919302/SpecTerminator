@@ -23,16 +23,9 @@ class NBDTLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge
     val sfence = Input(Valid(new SFenceReq))
     val ptw = new TLBPTWIO
     val kill = Input(Bool())
-    val store_risk = Input(Vec(memWidth, Bool()))
     val store_risk_tlb = Input(Vec(memWidth, Bool()))
     val load_risk = Input(Vec(memWidth, Bool()))
     val all_load_risk = Input(Vec(memWidth, Bool()))
-    val fireloadincoming = Input(Bool())
-    val fireloadretry = Input(Bool())
-    val debug_pc = Input(UInt())
-    val prs1_risk = Input(Bool())
-    val prs1_risk_st = Input(Bool())
-    val misstlbnum = Output(UInt(32.W))
   })
 
   class EntryData extends Bundle {
@@ -277,20 +270,7 @@ class NBDTLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge
   val pf_inst_array = widthMap(w => ~(x_array(w) | ptw_ae_array(w)))
 
   val tlb_hit = widthMap(w => real_hits(w).orR)
-  val tlb_miss = widthMap(w => (vm_enabled(w) && !bad_va(w) && !tlb_hit(w)) )
-  /*when(tlb_miss(0)&&io.load_risk(0)){
-    printf(p"tlb miss ")
-    printf(p"incoming=${io.fireloadincoming} ")
-    printf(p"retry=${io.fireloadretry} ")
-    printf(" debug_pc=0x%x ",io.debug_pc )
-    printf(p"prs1_risk=${io.prs1_risk} ")
-    printf(p"prs1_risk_st=${io.prs1_risk_st} ")
-    printf(p"io.store_risk(0)=${io.store_risk(0)}")
-    printf(p"io.load_risk(0)=${io.load_risk(0)}\n")
-  }*/
-  when(tlb_miss(0)&&io.debug_pc===0x00082022L.U){
-    // printf(p"82022 tlb miss\n")
-}
+  val tlb_miss = widthMap(w => vm_enabled(w) && !bad_va(w) && !tlb_hit(w))
 
   val sectored_plru = new PseudoLRU(sectored_entries.size)
   val superpage_plru = new PseudoLRU(superpage_entries.size)
@@ -304,11 +284,9 @@ class NBDTLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge
   // Superpages create the possibility that two entries in the TLB may match.
   // This corresponds to a software bug, but we can't return complete garbage;
   // we must return either the old translation or the new translation.  This
+  // isn't compatible with the Mux1H approach.  So, flush the TLB and report
   // a miss on duplicate entries.
   val multipleHits = widthMap(w => PopCountAtLeast(real_hits(w), 2))
-
-  val misstlbnum = RegInit(0.U(32.W))
-  io.misstlbnum := misstlbnum
 
   io.miss_rdy := state === s_ready
   for (w <- 0 until memWidth) {
@@ -336,22 +314,15 @@ class NBDTLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge
   if (usingVM) {
     val sfence = io.sfence.valid
     for (w <- 0 until memWidth) {
-      when (io.req(w).fire() && (vm_enabled(w) && !bad_va(w) && !tlb_hit(w)) && state === s_ready) {
+      when (io.req(w).fire() && tlb_miss(w) && state === s_ready) {
         state := s_request
-        
-        val tempmisstlbnum =  misstlbnum
-        misstlbnum := tempmisstlbnum + 1.U
-         
-
        // when(!io.store_risk_tlb(w) && !io.load_risk(w)){
-      
-          r_refill_tag := vpn(w)
+        r_refill_tag := vpn(w)
 
-          r_superpage_repl_addr := replacementEntry(superpage_entries, superpage_plru.way)
-          r_sectored_repl_addr  := replacementEntry(sectored_entries, sectored_plru.way)
-          r_sectored_hit_addr   := OHToUInt(sector_hits(w))
-          r_sectored_hit        := sector_hits(w).orR
-         
+        r_superpage_repl_addr := replacementEntry(superpage_entries, superpage_plru.way)
+        r_sectored_repl_addr  := replacementEntry(sectored_entries, sectored_plru.way)
+        r_sectored_hit_addr   := OHToUInt(sector_hits(w))
+        r_sectored_hit        := sector_hits(w).orR
        // }
       }
     }

@@ -32,10 +32,7 @@ class BoomDCacheReqInternal(implicit p: Parameters) extends BoomDCacheReq()(p)
   val sdq_id    = UInt(log2Ceil(cfg.nSDQ).W)
 }
 
-//MSHR是一个计算机体系结构用语，Miss-status Handling Registers 的缩写，用来记录每一项未完成的事务，记录的信息包括失效地址、关键字信息以及重命名寄存器信息。
-//一旦存储控制器返回失效访存所需要的数据，这些信息就用于重新执行
-//但在一次cache miss中，miss handling logic都会首先检查MSHR中是否有相同的请求。
-//如果有，这个请求就会被舍弃，没有新的数据请求加入。如果没有，则会将这个请求加入到MSHR中，将这个请求放入miss队列中，排队向下一层缓存发送数据请求
+
 class BoomMSHR(implicit edge: TLEdgeOut, p: Parameters) extends BoomModule()(p)
   with HasL1HellaCacheParameters
 {

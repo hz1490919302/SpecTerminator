@@ -43,7 +43,7 @@ class NullPrefetcher(implicit edge: TLEdgeOut, p: Parameters) extends DataPrefet
 }
 
 /**
-  * Next line prefetcher. Grabs the next line on a cache miss   获取缓存未命中的下一行
+  * Next line prefetcher. Grabs the next line on a cache miss
   */
 class NLPrefetcher(implicit edge: TLEdgeOut, p: Parameters) extends DataPrefetcher
 {

@@ -130,9 +130,6 @@ class FpPipeline(implicit p: Parameters) extends BoomModule with tile.HasFPUPara
   issue_unit.io.st_fudiv_interference <> io.st_fudiv_interference
   issue_unit.io.st_fufdiv_interference <> io.st_fufdiv_interference
 
-  issue_unit.io.idle_cycles := DontCare
-  issue_unit.io.return_issue := DontCare
-
   require (exe_units.numTotalBypassPorts == 0)
 
   //-------------------------------------------------------------
@@ -170,26 +167,9 @@ class FpPipeline(implicit p: Parameters) extends BoomModule with tile.HasFPUPara
     issue_wakeup.valid := writeback.valid
     issue_wakeup.bits.pdst  := writeback.bits.uop.pdst
     issue_wakeup.bits.poisoned := false.B
-    issue_wakeup.bits.debug_inst := writeback.bits.uop.debug_inst
-    issue_wakeup.bits.br_mask := writeback.bits.uop.br_mask
-    issue_wakeup.bits.risk_rob_idx := writeback.bits.uop.rob_idx
-    //issue_wakeup.bits.risk := writeback.bits.uop.risk
-    when(writeback.bits.uop.debug_inst === 0xd037f7d3L.U && writeback.valid){
-      printf(p" \nerror: a float wakeup4")
-      printf(p" fp_val=${writeback.bits.uop.fp_val}")
-      printf(p" pdst=${writeback.bits.uop.dst_rtype === RT_FIX}")
-      printf(p" come from rob =${writeback.bits.uop.comefrom_rob}\n")
-    }
-    when(writeback.bits.uop.comefrom_rob){
-      issue_wakeup.bits.risk := false.B
-    } .otherwise{
-      issue_wakeup.bits.risk := Mux(writeback.bits.uop.dst_rtype === RT_FLT,io.fp_risk_table(writeback.bits.uop.pdst) || io.st_fp_risk_table(writeback.bits.uop.pdst),io.risk_table(writeback.bits.uop.pdst) || io.st_risk_table(writeback.bits.uop.pdst))
-    }
   }
-
   issue_unit.io.pred_wakeup_port.valid := false.B
   issue_unit.io.pred_wakeup_port.bits := DontCare
-
 
   //-------------------------------------------------------------
   // **** Register Read Stage ****

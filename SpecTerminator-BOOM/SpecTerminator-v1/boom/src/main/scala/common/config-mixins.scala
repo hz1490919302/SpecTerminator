@@ -126,11 +126,7 @@ class WithNSmallBooms(n: Int = 1, overrideIdOffset: Option[Int] = None) extends 
   })
 )
 
-/**
- * Class to renumber BOOM + Rocket harts so that there are no overlapped harts
- * This fragment assumes Rocket tiles are numbered before BOOM tiles
- * Also makes support for multiple harts depend on Rocket + BOOM
- * Note: Must come after all harts are assigned for it to app */
+
 
 /**
  * 2-wide BOOM.

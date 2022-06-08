@@ -151,7 +151,6 @@ trait HasBoomCoreParameters extends freechips.rocketchip.tile.HasCoreParameters
   // decodeWidth provided by CoreParams class.
 
   // coreWidth is width of decode, width of integer rename, width of ROB, and commit width
-  //coreWidth是decode的宽度，integer rename的宽度，ROB的宽度，commit的宽度
   val coreWidth = decodeWidth
 
   require (isPow2(fetchWidth))
@@ -241,7 +240,7 @@ trait HasBoomCoreParameters extends freechips.rocketchip.tile.HasCoreParameters
   val useLHist = localHistoryNSets > 1 && localHistoryLength > 1
 
   //************************************
-  // Extra Knobs and Features  额外的旋钮和功能
+  // Extra Knobs and Features
   val enableCommitMapTable = boomParams.enableCommitMapTable
   require(!enableCommitMapTable) // TODO Fix the commit map table.
   val enableFastPNR = boomParams.enableFastPNR

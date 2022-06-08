@@ -187,7 +187,6 @@ abstract class FunctionalUnit(
     val mcontext = if (isMemAddrCalcUnit) Input(UInt(coreParams.mcontextWidth.W)) else null
     val scontext = if (isMemAddrCalcUnit) Input(UInt(coreParams.scontextWidth.W)) else null
 
-
   })
 }
 
@@ -377,8 +376,9 @@ class ALUUnit(isJmpUnit: Boolean = false, numStages: Int = 1, dataWidth: Int)(im
   }
 
   val brinfo = Wire(new BrResolutionInfo)
+
   // note: jal doesn't allocate a branch-mask, so don't clear a br-mask bit
-  brinfo.valid          := (is_br || is_jalr)
+  brinfo.valid          := is_br || is_jalr
   brinfo.mispredict     := mispredict
   brinfo.uop            := uop
   brinfo.cfi_type       := Mux(is_jalr, CFI_JALR,
@@ -423,6 +423,7 @@ class ALUUnit(isJmpUnit: Boolean = false, numStages: Int = 1, dataWidth: Int)(im
   }
 
   brinfo.target_offset := target_offset
+
 
   io.brinfo := brinfo
 
