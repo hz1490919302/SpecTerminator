@@ -50,8 +50,6 @@ object Fold
 /**
  * Object to check if MicroOp was killed due to a branch mispredict.
  * Uses "Fast" branch masks
-  * 检查MicroOp是否由于分支错误预测而被杀死。
-  * 使用“快速”分支掩码
  */
 object IsKilledByBranch
 {
@@ -399,7 +397,7 @@ object Transpose
 }
 
 /**
-  * N-wide one-hot priority encoder. n宽独热优先级编码器。
+  * N-wide one-hot priority encoder.
  */
 object SelectFirstN
 {
@@ -417,7 +415,7 @@ object SelectFirstN
 }
 
 /**
- * Connect the first k of n valid input interfaces to k output interfaces.           将n个有效输入接口中的前k个连接到k个输出接口。
+ * Connect the first k of n valid input interfaces to k output interfaces.
  */
 class Compactor[T <: chisel3.Data](n: Int, k: Int, gen: T) extends Module
 {
