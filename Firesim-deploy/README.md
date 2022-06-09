@@ -16,8 +16,13 @@ Then use ssh to log in to the linux simulated by firesim, account root, and pass
 
 
 
+
 firesim version:
+
 commit 7e32128bea5390ca528052dcdffb13656ee41162 (HEAD -> master, origin/master, origin/HEAD)
+
 Merge: eccbcb60 54e6d2ac
+
 Author: alonamid <alonamid@eecs.berkeley.edu>
+
 Date:   Sat Jan 30 10:57:19 2021 -0800
