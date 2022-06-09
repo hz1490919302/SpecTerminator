@@ -761,9 +761,9 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
                             !(io.lsu.exception && s2_req(w).uop.uses_ldq)   &&
                              (isPrefetch(s2_req(w).uop.mem_cmd) ||
                               isRead(s2_req(w).uop.mem_cmd)     ||
-                              isWrite(s2_req(w).uop.mem_cmd)) && true.B
-                            // !( (prs1_risk || prs2_risk || prs3_risk) && pdst_risk ) &&
-                            // !( (prs1_risk_st || prs2_risk_st || prs3_risk_st) && pdst_risk_st )
+                              isWrite(s2_req(w).uop.mem_cmd)) && 
+                             !( (prs1_risk || prs2_risk || prs3_risk) && pdst_risk ) &&
+                             !( (prs1_risk_st || prs2_risk_st || prs3_risk_st) && pdst_risk_st )
    
 
     //assert(!(mshrs.io.req(w).valid && s2_type === t_replay), "Replays should not need to go back into MSHRs")
@@ -889,8 +889,8 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
       !(io.lsu.exception && s2_req(w).uop.uses_ldq)   &&
       (isPrefetch(s2_req(w).uop.mem_cmd) ||
         isRead(s2_req(w).uop.mem_cmd)     ||
-        isWrite(s2_req(w).uop.mem_cmd)) && false.B
-       // ((pdst_risk && (prs1_risk || prs2_risk || prs3_risk)) || (pdst_risk_st && (prs1_risk_st || prs2_risk_st || prs3_risk_st)) )
+        isWrite(s2_req(w).uop.mem_cmd)) &&
+        ((pdst_risk && (prs1_risk || prs2_risk || prs3_risk)) || (pdst_risk_st && (prs1_risk_st || prs2_risk_st || prs3_risk_st)) )
  )
     {
       io.lsu.nack(w).valid := true.B

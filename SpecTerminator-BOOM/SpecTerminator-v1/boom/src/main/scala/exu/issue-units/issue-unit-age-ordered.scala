@@ -130,7 +130,7 @@ class IssueUnitCollapsing(
 
   val all_risk2_interference = ( issue_slots(i).uop.fu_code === FU_DIV && (io.fudiv_interference === true.B) && ((prs1_risk1_interference === true.B) || (prs2_risk1_interference === true.B)) ) ||
                                ( issue_slots(i).uop.fu_code === FU_DIV && (io.st_fudiv_interference === true.B) && ((prs1_risk_st1_interference === true.B) || (prs2_risk_st1_interference === true.B)) )   
-      when (requests(i) && !uop_issued && can_allocate && !port_issued(w) && !all_risk1 && true.B ) { //&& !(all_risk1_interference || all_risk2_interference)
+      when (requests(i) && !uop_issued && can_allocate && !port_issued(w) && !(all_risk1_interference || all_risk2_interference) ) { //&& !(all_risk1_interference || all_risk2_interference)
         issue_slots(i).grant := true.B
         io.iss_valids(w) := true.B
         io.iss_uops(w) := issue_slots(i).uop
