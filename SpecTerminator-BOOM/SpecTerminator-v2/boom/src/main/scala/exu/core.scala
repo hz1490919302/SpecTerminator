@@ -1519,7 +1519,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
 
   // detect pipeline freezes and throw error
   val idle_cycles1 = freechips.rocketchip.util.WideCounter(32)
-  val max_idle = RegInit(0.U(32.W))
 
   when (rob.io.commit.valids.asUInt.orR ||
         csr.io.csr_stall ||
@@ -1529,22 +1528,11 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   }
   assert (!(idle_cycles1.value(13)), "Pipeline has hung.")
   
-  
-  /*when(idle_cycles1.value(6) && idle_cycles1.value(2) && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){  // && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){
-       for(i <- 0 until numIntPhysRegs){
-            risk_table(i) := false.B
-            st_risk_table(i) := false.B
-            risk_table_interference(i) := false.B
-            st_risk_table_interference(i) := false.B
-       }
-       for(i <- 0 until numFpPhysRegs){
-            fp_risk_table(i) := false.B
-            st_fp_risk_table(i) := false.B
-            fp_risk_table_interference(i) := false.B
-            st_fp_risk_table_interference(i) := false.B
-       }
-  }*/
-
+//When running large workloads (hundreds of millions of instructions), due to the overly sophisticated BOOM, 
+//enabling the tlb delay defense causes the pipeline to pause by the possibility that some registers that should be decontaminated have not been decontaminated.
+//Therefore, we provide a solution: when an instruction has not been committed after 80 cycles fromthe last commit (all instructions in Spectre gadget 
+//are committed within 60 cycles from the last commit), we clear the destination registers of the instructions that have failed, generated exceptions, 
+//or been predicated in the ROB, and clear the source registers of the instructions that have been executed (rob_bsy,rob_unsafe).
 
    when(idle_cycles1.value(6) && idle_cycles1.value(4)){
        for(i <- 0 until numIntPhysRegs){
