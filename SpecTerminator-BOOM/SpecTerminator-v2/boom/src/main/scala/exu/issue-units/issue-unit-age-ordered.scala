@@ -119,7 +119,7 @@ class IssueUnitCollapsing(
   val prs2_risk1 = Mux(issue_slots(i).uop.lrs2_rtype === RT_FIX, io.risk_table(issue_slots(i).uop.prs2), Mux(issue_slots(i).uop.lrs2_rtype === RT_FLT, io.fp_risk_table(issue_slots(i).uop.prs2), false.B) )
   val prs1_risk_st1 = Mux(issue_slots(i).uop.lrs1_rtype === RT_FIX, io.st_risk_table(issue_slots(i).uop.prs1), Mux(issue_slots(i).uop.lrs1_rtype === RT_FLT, io.st_fp_risk_table(issue_slots(i).uop.prs1), false.B) )
   val prs2_risk_st1 = Mux(issue_slots(i).uop.lrs2_rtype === RT_FIX, io.st_risk_table(issue_slots(i).uop.prs2), Mux(issue_slots(i).uop.lrs2_rtype === RT_FLT, io.st_fp_risk_table(issue_slots(i).uop.prs2), false.B) )
-  val all_risk1 = (issue_slots(i).uop.is_br || issue_slots(i).uop.is_jalr) && (prs1_risk1 || prs2_risk1 || prs1_risk_st1 || prs2_risk_st1)   
+  val all_risk1 = (issue_slots(i).uop.is_br || issue_slots(i).uop.is_jalr) && (prs1_risk1 || prs2_risk1 || prs1_risk_st1 || prs2_risk_st1) // 
     
   val prs1_risk1_interference = Mux(issue_slots(i).uop.lrs1_rtype === RT_FIX, io.risk_table_interference(issue_slots(i).uop.prs1), Mux(issue_slots(i).uop.lrs1_rtype === RT_FLT, io.fp_risk_table_interference(issue_slots(i).uop.prs1), false.B) )
   val prs2_risk1_interference = Mux(issue_slots(i).uop.lrs2_rtype === RT_FIX, io.risk_table_interference(issue_slots(i).uop.prs2), Mux(issue_slots(i).uop.lrs2_rtype === RT_FLT, io.fp_risk_table_interference(issue_slots(i).uop.prs2), false.B) )
@@ -130,7 +130,7 @@ class IssueUnitCollapsing(
 
   val all_risk2_interference = ( issue_slots(i).uop.fu_code === FU_DIV && (io.fudiv_interference === true.B) && ((prs1_risk1_interference === true.B) || (prs2_risk1_interference === true.B)) ) ||
                                ( issue_slots(i).uop.fu_code === FU_DIV && (io.st_fudiv_interference === true.B) && ((prs1_risk_st1_interference === true.B) || (prs2_risk_st1_interference === true.B)) )   
-      when (requests(i) && !uop_issued && can_allocate && !port_issued(w) && !all_risk1 && !(all_risk1_interference || all_risk2_interference) ) { //&& !(all_risk1_interference || all_risk2_interference)
+      when (requests(i) && !uop_issued && can_allocate && !port_issued(w) && !all_risk1 && !(all_risk1_interference || all_risk2_interference)) { // && !all_risk1 && !(all_risk1_interference || all_risk2_interference)
         issue_slots(i).grant := true.B
         io.iss_valids(w) := true.B
         io.iss_uops(w) := issue_slots(i).uop

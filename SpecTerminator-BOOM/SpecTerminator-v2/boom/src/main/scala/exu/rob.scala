@@ -112,11 +112,18 @@ class RobIo(
   val debug_tsc = Input(UInt(xLen.W))
   val rob_val = Output(Vec(numRobRows,Bool()))
   val rob_uop = Output(Vec(32,new MicroOp()))
+  val rob_bsy = Output(Vec(numRobRows,Bool()))
+  val rob_unsafe = Output(Vec(numRobRows,Bool()))
+  val rob_exception =  Output(Vec(numRobRows,Bool()))
+  val rob_predicated =  Output(Vec(numRobRows,Bool()))
 
   val fudiv_interference = Output(Bool())
   val fufdiv_interference = Output(Bool())
   val st_fudiv_interference = Output(Bool())
   val st_fufdiv_interference = Output(Bool())
+
+  val pdstintmask = Output(UInt(numIntPhysRegs.W))
+  val pdstfpmask = Output(UInt(numFpPhysRegs.W))
 
   val idle_cycles = Input(UInt(50.W))
   val clear_risk_table = Output(Vec(numIntPhysRegs+numFpPhysRegs,UInt(1.W)))  //10 is random
@@ -373,6 +380,10 @@ class Rob(
     for(i <- 0 until numRobRows) {
       io.rob_val(i) := rob_val(i)
       io.rob_uop(i) := rob_uop(i)
+      io.rob_bsy(i) := rob_bsy(i)
+      io.rob_predicated(i) := rob_predicated(i)
+      io.rob_unsafe(i) := rob_unsafe(i)
+      io.rob_exception(i):= rob_exception(i)
     }
 
     val clear_risk_table = RegInit(VecInit(Seq.fill(numIntPhysRegs+numFpPhysRegs){0.U(1.W)}))   
@@ -389,9 +400,17 @@ class Rob(
       val prs2_mask = Mux(rob_uop(i).lrs2_rtype === RT_FIX, io.risk_table(rob_uop(i).prs2), Mux(rob_uop(i).lrs2_rtype === RT_FLT, io.fp_risk_table(rob_uop(i).prs2),false.B))
       val prs3_mask = Mux(rob_uop(i).frs3_en, io.fp_risk_table(rob_uop(i).prs3), false.B)
 
-      when( (rob_uop(i).risk1 || rob_uop(i).risk2) && (rob_uop(i).br_mask === 0.U || ( ((0 until 32).map{ k => rob_val(k) << rob_uop(k).br_tag }.reduce(_|_)&rob_uop(i).br_mask) === 0.U) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.fp_risk_table(rob_uop(i).pdst) === true.B))){     // TODO
-         val index_pdst = Mux(rob_uop(i).dst_rtype === RT_FLT,rob_uop(i).pdst + numIntPhysRegs.U,rob_uop(i).pdst)
+      val rob_uop_mask = UpdateBrMask(io.brupdate, (rob_uop(i)))
+
+      when( (rob_uop(i).risk1 || rob_uop(i).risk2) && (rob_uop_mask.br_mask === 0.U || IsOlder(rob_uop_mask.rob_idx, rob_pnr_idx, rob_head_idx) || ( ((0 until 32).map{ k => rob_val(k) << rob_uop(k).br_tag }.reduce(_|_)&rob_uop_mask.br_mask) === 0.U) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.fp_risk_table(rob_uop(i).pdst) === true.B))){     // TODO
+         val index_pdst = Mux(rob_uop(i).dst_rtype === RT_FLT,rob_uop(i).pdst + numIntPhysRegs.U,Mux(rob_uop(i).dst_rtype === RT_FIX,rob_uop(i).pdst,0.U))
          clear_risk_table(index_pdst) := 1.U
+         val index_pdst1 = Mux(rob_uop(i).lrs1_rtype === RT_FLT,rob_uop(i).prs1 + numIntPhysRegs.U,Mux(rob_uop(i).lrs1_rtype === RT_FIX,rob_uop(i).prs1,0.U))
+         clear_risk_table(index_pdst1) := 1.U
+         val index_pdst2 = Mux(rob_uop(i).lrs2_rtype === RT_FLT,rob_uop(i).prs2 + numIntPhysRegs.U,Mux(rob_uop(i).lrs2_rtype === RT_FIX,rob_uop(i).prs2,0.U))
+         clear_risk_table(index_pdst2) := 1.U
+         val index_pdst3 = Mux(rob_uop(i).frs3_en === true.B,rob_uop(i).prs3 + numIntPhysRegs.U,0.U)
+         clear_risk_table(index_pdst3) := 1.U
          rob_uop(i).risk1 := false.B
          rob_uop(i).risk2 := false.B
       }
@@ -405,9 +424,15 @@ class Rob(
       val prs3_wuran = Mux(rob_uop(i).frs3_en, io.st_fp_risk_table(rob_uop(i).prs3), false.B)
       val noload = rob_uop(i).risk4 && !prs1_wuran && !prs2_wuran && !prs3_wuran
       //no-load untaint
-      when((rob_uop(i).risk3 || rob_uop(i).risk4) && ( (rob_uop(i).uses_ldq && load_can_clear) || (!rob_uop(i).uses_ldq && no_load_can_clear) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.st_risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.st_fp_risk_table(rob_uop(i).pdst) === true.B)) ){    
+      when((rob_uop(i).risk4 || rob_uop(i).risk3) && ( (rob_uop(i).uses_ldq && load_can_clear) || (!rob_uop(i).uses_ldq && no_load_can_clear) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.st_risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.st_fp_risk_table(rob_uop(i).pdst) === true.B)) ){    
         val index_pdst = Mux(rob_uop(i).dst_rtype === RT_FLT,rob_uop(i).pdst + numIntPhysRegs.U,rob_uop(i).pdst)
         clear_st_risk_table(index_pdst) := 1.U
+        val index_pdst1 = Mux(rob_uop(i).lrs1_rtype === RT_FLT,rob_uop(i).prs1 + numIntPhysRegs.U,Mux(rob_uop(i).lrs1_rtype === RT_FIX,rob_uop(i).prs1,0.U))
+        clear_st_risk_table(index_pdst1) := 1.U
+        val index_pdst2 = Mux(rob_uop(i).lrs2_rtype === RT_FLT,rob_uop(i).prs2 + numIntPhysRegs.U,Mux(rob_uop(i).lrs2_rtype === RT_FIX,rob_uop(i).prs2,0.U))
+        clear_st_risk_table(index_pdst2) := 1.U
+        val index_pdst3 = Mux(rob_uop(i).frs3_en === true.B,rob_uop(i).prs3 + numIntPhysRegs.U,0.U)
+        clear_st_risk_table(index_pdst3) := 1.U
         rob_uop(i).risk4 := false.B
         rob_uop(i).risk3 := false.B
       }
@@ -461,8 +486,11 @@ class Rob(
     io.st_fufdiv_interference := (0 until numRobRows).map{ i => rob_val(i) && rob_uop(i).fu_code === 128.U && rob_bsy(i) && ((rob_uop(i).dst_rtype === RT_FIX && io.st_risk_table(rob_uop(i).pdst) === false.B) || (rob_uop(i).dst_rtype === RT_FLT && io.st_fp_risk_table(rob_uop(i).pdst) === false.B ))  }.reduce(_||_) =/= 0.U
     io.fudiv_interference := (0 until numRobRows).map{ i => rob_val(i) && rob_uop(i).fu_code === 16.U && rob_bsy(i) && ((rob_uop(i).dst_rtype === RT_FIX && io.risk_table(rob_uop(i).pdst) === false.B) || (rob_uop(i).dst_rtype === RT_FLT && io.fp_risk_table(rob_uop(i).pdst) === false.B))  }.reduce(_||_) =/= 0.U          
     io.fufdiv_interference := (0 until numRobRows).map{ i => rob_val(i) && rob_uop(i).fu_code === 128.U && rob_bsy(i) && ((rob_uop(i).dst_rtype === RT_FIX && io.risk_table(rob_uop(i).pdst) === false.B) || (rob_uop(i).dst_rtype === RT_FLT && io.fp_risk_table(rob_uop(i).pdst) === false.B ))  }.reduce(_||_) =/= 0.U
-   
+  
+      
+    io.pdstintmask := (0 until numRobRows).map{i => (rob_val(i) && rob_unsafe(i) && !rob_exception(i) && !rob_predicated(i) && rob_bsy(i) && rob_uop(i).dst_rtype === RT_FIX) << rob_uop(i).pdst }.reduce(_|_)
 
+    io.pdstfpmask := (0 until numRobRows).map{i => (rob_val(i) && rob_unsafe(i) && !rob_exception(i) && !rob_predicated(i) && rob_bsy(i) && rob_uop(i).dst_rtype === RT_FLT) << rob_uop(i).pdst }.reduce(_|_)
     //-----------------------------------------------
     // Accruing fflags
     for (i <- 0 until numFpuPorts) {
@@ -590,6 +618,15 @@ class Rob(
       MatchBank(GetBankIdx(io.brupdate.b2.uop.rob_idx))) {
       rob_uop(GetRowIdx(io.brupdate.b2.uop.rob_idx)).debug_fsrc := BSRC_C
       rob_uop(GetRowIdx(io.brupdate.b2.uop.rob_idx)).taken      := io.brupdate.b2.taken
+    }
+
+    when(rob_val(rob_head) === true.B){
+       val index_pdst1=Mux(rob_uop(rob_head).dst_rtype === RT_FLT,rob_uop(rob_head).pdst+numIntPhysRegs.U,rob_uop(rob_head).pdst)
+       clear_risk_table(index_pdst1) := 1.U
+       val index_pdst2=Mux(rob_uop(rob_head).lrs1_rtype === RT_FLT,rob_uop(rob_head).prs1+numIntPhysRegs.U,Mux(rob_uop(rob_head).lrs1_rtype === RT_FIX,rob_uop(rob_head).prs1,0.U))
+       clear_risk_table(index_pdst2) := 1.U
+       val index_pdst3=Mux(rob_uop(rob_head).lrs2_rtype === RT_FLT,rob_uop(rob_head).prs2+numIntPhysRegs.U,Mux(rob_uop(rob_head).lrs2_rtype === RT_FIX,rob_uop(rob_head).prs2,0.U))
+       clear_risk_table(index_pdst3) := 1.U
     }
 
     // -----------------------------------------------

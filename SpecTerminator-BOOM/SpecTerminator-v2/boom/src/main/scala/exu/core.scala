@@ -836,14 +836,14 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               }
 	  }
 
+    val disuopsmask = UpdateBrMask(brupdate, dis_uops(i))
 
-
-    val maskvalid = ((0 until 32).map{ k => rob.io.rob_val(k) << rob.io.rob_uop(k).br_tag }.reduce(_|_) & dis_uops(i).br_mask) =/= 0.U
+    val maskvalid = ((0 until 32).map{ k => rob.io.rob_val(k) << rob.io.rob_uop(k).br_tag }.reduce(_|_) & disuopsmask.br_mask) =/= 0.U
     val prs1_wuran_mask = Mux(dis_uops(i).lrs1_rtype === RT_FIX, risk_table(dis_uops(i).prs1), Mux(dis_uops(i).lrs1_rtype === RT_FLT, fp_risk_table(dis_uops(i).prs1),false.B))
     val prs2_wuran_mask = Mux(dis_uops(i).lrs2_rtype === RT_FIX, risk_table(dis_uops(i).prs2), Mux(dis_uops(i).lrs2_rtype === RT_FLT, fp_risk_table(dis_uops(i).prs2),false.B))
     val prs3_wuran_mask = Mux(dis_uops(i).frs3_en, fp_risk_table(dis_uops(i).prs3), false.B)
 
-    when(dis_uops(i).br_mask =/= 0.U && maskvalid && dis_uops(i).uses_ldq && dis_uops(i).pdst =/= 0.U && !(prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask) ){
+    when(disuopsmask.br_mask =/= 0.U && maskvalid && dis_uops(i).uses_ldq && dis_uops(i).pdst =/= 0.U && !(prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask) ){
       when(dis_fire(i) ) {
         when(dis_uops(i).dst_rtype === RT_FLT){
           fp_risk_table(dis_uops(i).pdst) := true.B
@@ -854,7 +854,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
         }
       }
     }
-     .elsewhen(dis_uops(i).br_mask =/= 0.U && maskvalid && dis_uops(i).pdst =/= 0.U && (prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask)){ //
+     .elsewhen(disuopsmask.br_mask =/= 0.U && maskvalid && dis_uops(i).pdst =/= 0.U && (prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask)){ //
         when(dis_fire(i) ) {
           when(dis_uops(i).dst_rtype === RT_FLT){
             fp_risk_table(dis_uops(i).pdst) := true.B
@@ -867,7 +867,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       }
 
 
-    	  when(dis_uops(i).br_mask =/= 0.U && maskvalid && dis_uops(i).uses_ldq && dis_uops(i).pdst =/= 0.U && (prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask) ){
+    	  when(disuopsmask.br_mask =/= 0.U && maskvalid && dis_uops(i).uses_ldq && dis_uops(i).pdst =/= 0.U && (prs1_wuran_mask || prs2_wuran_mask || prs3_wuran_mask) ){
 	    when(dis_fire(i) ) {
               when(dis_uops(i).dst_rtype === RT_FLT){
 		     fp_risk_table_interference(dis_uops(i).pdst) := true.B
@@ -1519,6 +1519,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
 
   // detect pipeline freezes and throw error
   val idle_cycles1 = freechips.rocketchip.util.WideCounter(32)
+  val max_idle = RegInit(0.U(32.W))
 
   when (rob.io.commit.valids.asUInt.orR ||
         csr.io.csr_stall ||
@@ -1529,7 +1530,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   assert (!(idle_cycles1.value(13)), "Pipeline has hung.")
   
   
-  when(idle_cycles1.value(6) && idle_cycles1.value(2) && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){  // && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){
+  /*when(idle_cycles1.value(6) && idle_cycles1.value(2) && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){  // && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){
        for(i <- 0 until numIntPhysRegs){
             risk_table(i) := false.B
             st_risk_table(i) := false.B
@@ -1542,20 +1543,121 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
             fp_risk_table_interference(i) := false.B
             st_fp_risk_table_interference(i) := false.B
        }
-  }
+  }*/
+
+
+   when(idle_cycles1.value(6) && idle_cycles1.value(4)){
+       for(i <- 0 until numIntPhysRegs){
+           when(((0x1L.U << i) & rob.io.pdstintmask) === 0.U){
+              risk_table(i) := false.B
+              st_risk_table(i) := false.B
+              risk_table_interference(i) := false.B
+              st_risk_table_interference(i) := false.B
+           }
+       }
+       for(i <- 0 until numFpPhysRegs){
+           when(((0x1L.U << i) & rob.io.pdstfpmask) === 0.U){
+              fp_risk_table(i) := false.B
+              st_fp_risk_table(i) := false.B
+              fp_risk_table_interference(i) := false.B
+              st_fp_risk_table_interference(i) := false.B
+           }
+       }
+      
+       for(i <- 0 until 32){
+           when(rob.io.rob_uop(i).dst_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){//
+              risk_table(rob.io.rob_uop(i).pdst) := false.B
+              st_risk_table(rob.io.rob_uop(i).pdst) := false.B
+              risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+              st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+           }
+           when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              risk_table(rob.io.rob_uop(i).prs1) := false.B
+              st_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+              st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+           }
+           when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              risk_table(rob.io.rob_uop(i).prs2) := false.B
+              st_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+              st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+           }
+           when(rob.io.rob_uop(i).frs3_en === true.B && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+           }
+            when(rob.io.rob_uop(i).dst_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){
+              fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+            }
+            when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+            }
+            when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+            }
+       }
+
+   }
+ 
     when(idle_cycles1.value(7)){
-       for(i <- 0 until numIntPhysRegs){
-            risk_table(i) := false.B
-            st_risk_table(i) := false.B
-            risk_table_interference(i) := false.B
-            st_risk_table_interference(i) := false.B
-       }
-       for(i <- 0 until numFpPhysRegs){
-            fp_risk_table(i) := false.B
-            st_fp_risk_table(i) := false.B
-            fp_risk_table_interference(i) := false.B
-            st_fp_risk_table_interference(i) := false.B
-       }
+      for(i <- 0 until 32){
+        when(IsOlder(rob.io.rob_uop(i).rob_idx, rob.io.rob_pnr_idx, rob.io.rob_head_idx) || (rob.io.rob_uop(i).rob_idx === rob.io.rob_head_idx)){
+      when(rob.io.rob_uop(i).dst_rtype === RT_FIX){
+      risk_table(rob.io.rob_uop(i).pdst) := false.B
+      st_risk_table(rob.io.rob_uop(i).pdst) := false.B
+      risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+      st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+      }
+      when(rob.io.rob_uop(i).dst_rtype === RT_FLT){
+      fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
+      st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
+      fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+      st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+      }
+      when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX){
+      risk_table(rob.io.rob_uop(i).prs1) := false.B
+      st_risk_table(rob.io.rob_uop(i).prs1) := false.B
+      risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+      st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+      }
+      when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT){
+      fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+      st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+      fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+      st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+      }
+      when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX){
+      risk_table(rob.io.rob_uop(i).prs2) := false.B
+      st_risk_table(rob.io.rob_uop(i).prs2) := false.B
+      risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+      st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+      }
+      when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT){
+      fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+      st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+      fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+      st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+      }
+      when(rob.io.rob_uop(i).frs3_en === true.B){
+      fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+      st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+      fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+      st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+      }
+     }
+    }
   }
   
   val start = RegInit(false.B)
@@ -1600,11 +1702,10 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      val tempmisstlb = misstlbuopnum
      misstlbuopnum := tempmisstlb + 1.U
   }
- 
-  for(w <- 0 until coreWidth){
-     when(rob.io.commit.arch_valids(w) && start && realstart){
 
-          myuop := rob.io.commit.uops(w).uopc
+
+  for(w <- 0 until coreWidth){
+     when(rob.io.commit.arch_valids(w)){
           when(rob.io.commit.uops(w).dst_rtype === RT_FLT){
               fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
               st_fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
@@ -1616,7 +1717,26 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               st_risk_table(rob.io.commit.uops(w).pdst) := false.B
               risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
               st_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
+          }     
+     }
+  }
+ 
+  for(w <- 0 until coreWidth){
+     when(rob.io.commit.arch_valids(w) && start && realstart){
+
+          myuop := rob.io.commit.uops(w).uopc
+          /*when(rob.io.commit.uops(w).dst_rtype === RT_FLT){
+              fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
+              st_fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
+              fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
+              st_fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
           }
+          when(rob.io.commit.uops(w).dst_rtype === RT_FIX){
+              risk_table(rob.io.commit.uops(w).pdst) := false.B
+              st_risk_table(rob.io.commit.uops(w).pdst) := false.B
+              risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
+              st_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
+          }*/
 
           val temp = alluopnum
           alluopnum := temp + 1.U
@@ -1656,7 +1776,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      }
   }
 
-    /*when(firstalluopnum === 4000000000L.U){
+    when(firstalluopnum === 4000000000L.U){
       printf(midas.targetutils.SynthesizePrintf(" 0-40billion time=%d\n",idle_cycles.value-starttime))
       printf(midas.targetutils.SynthesizePrintf(" alluopnum=%d\n",alluopnum))
       printf(midas.targetutils.SynthesizePrintf(" loaduopnum=%d\n",loaduopnum))
@@ -1675,7 +1795,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       printf(midas.targetutils.SynthesizePrintf(" disothertime=%d\n",disothertime))
    }
   
-   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") */
+   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") 
 
 
   if (usingFPU) {

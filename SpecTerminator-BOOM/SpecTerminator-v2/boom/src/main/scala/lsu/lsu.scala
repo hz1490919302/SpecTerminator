@@ -675,8 +675,9 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
     dtlb.io.req(w).bits.size        := exe_size(w)
     dtlb.io.req(w).bits.cmd         := exe_cmd(w)
     dtlb.io.req(w).bits.passthrough := exe_passthr(w)   
-    
+   
     dtlb.io.store_risk_tlb(w)       := (will_fire_stad_incoming(w) || will_fire_sta_incoming(w) || will_fire_sta_retry(w)) && (io.core.risk_table(exe_tlb_uop(w).prs1) || io.core.st_risk_table(exe_tlb_uop(w).prs1)) && exe_tlb_uop(w).uses_stq && exe_tlb_uop(w).lrs1_rtype === RT_FIX 
+   // dtlb.io.store_risk_tlb(w)       := (will_fire_stad_incoming(w) || will_fire_sta_incoming(w) || will_fire_sta_retry(w)) && (io.core.risk_table(exe_tlb_uop(w).prs1) ) && exe_tlb_uop(w).uses_stq && exe_tlb_uop(w).lrs1_rtype === RT_FIX 
     val pdst_risk = Mux(exe_tlb_uop(w).dst_rtype === RT_FIX, io.core.risk_table(exe_tlb_uop(w).pdst), Mux(exe_tlb_uop(w).dst_rtype === RT_FLT, io.core.fp_risk_table(exe_tlb_uop(w).pdst), false.B) )
     val prs1_risk = Mux(exe_tlb_uop(w).lrs1_rtype === RT_FIX, io.core.risk_table(exe_tlb_uop(w).prs1), Mux(exe_tlb_uop(w).lrs1_rtype === RT_FLT, io.core.fp_risk_table(exe_tlb_uop(w).prs1), false.B) )
     val prs2_risk = Mux(exe_tlb_uop(w).lrs2_rtype === RT_FIX, io.core.risk_table(exe_tlb_uop(w).prs2), Mux(exe_tlb_uop(w).lrs2_rtype === RT_FLT, io.core.fp_risk_table(exe_tlb_uop(w).prs2), false.B) )
@@ -686,6 +687,7 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
     val prs2_risk_st = Mux(exe_tlb_uop(w).lrs2_rtype === RT_FIX, io.core.st_risk_table(exe_tlb_uop(w).prs2), Mux(exe_tlb_uop(w).lrs2_rtype === RT_FLT, io.core.st_fp_risk_table(exe_tlb_uop(w).prs2), false.B) )
     val prs3_risk_st = Mux(exe_tlb_uop(w).frs3_en, io.core.st_fp_risk_table(exe_tlb_uop(w).prs3), false.B)  
     dtlb.io.load_risk(w)             := (will_fire_load_incoming(w) || will_fire_load_retry(w)) && exe_tlb_uop(w).uses_ldq && (( (prs1_risk || prs2_risk || prs3_risk) && pdst_risk ) || ( (prs1_risk_st || prs2_risk_st || prs3_risk_st) && pdst_risk_st ))
+    //dtlb.io.load_risk(w)             := (will_fire_load_incoming(w) || will_fire_load_retry(w)) && exe_tlb_uop(w).uses_ldq && (( (prs1_risk || prs2_risk || prs3_risk) && pdst_risk ) )
     dtlb.io.all_load_risk(w)         := (will_fire_load_incoming(w) || will_fire_load_retry(w)) && exe_tlb_uop(w).uses_ldq && (pdst_risk || pdst_risk_st)
  }
   
@@ -1174,11 +1176,11 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
         // We are older than this load, which overlapped us.
         when (!l_bits.forward_std_val || // If the load wasn't forwarded, it definitely failed
           ((l_forward_stq_idx =/= lcam_stq_idx(w)) && forwarded_is_older)) { // If the load forwarded from us, we might be ok
-          when(io.core.risk_table(lcam_uop(w).prs1) || io.core.st_risk_table(lcam_uop(w).prs1)){
+           when(io.core.risk_table(lcam_uop(w).prs1) || io.core.st_risk_table(lcam_uop(w).prs1)){
               stq(lcam_stq_idx(w)).bits.preorder_fail := i.U
               ldq(i).bits.uop.orderfailstq := lcam_stq_idx(w)
           }  
-          .otherwise{ 
+          .otherwise{
               ldq(i).bits.order_fail := true.B
               failed_loads(i)        := true.B
            }
