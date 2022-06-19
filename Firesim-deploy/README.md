@@ -10,3 +10,19 @@ Then copy all the files in the Firesim-deploy/workloads directory to the firesim
 "./run-workloads.sh spec6.int.ini --withlaunch" can start firesim automatically.
 
 Then use ssh to log in to the linux simulated by firesim, account root, and password is firesim. The rest of the steps are the same as described in the firesim documentation: https://docs.fires.im/en/stable/Running-Simulations-Tutorial/index.html
+
+
+
+
+
+
+
+firesim version:
+
+commit 7e32128bea5390ca528052dcdffb13656ee41162 (HEAD -> master, origin/master, origin/HEAD)
+
+Merge: eccbcb60 54e6d2ac
+
+Author: alonamid <alonamid@eecs.berkeley.edu>
+
+Date:   Sat Jan 30 10:57:19 2021 -0800
