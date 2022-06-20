@@ -1610,55 +1610,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
        }
 
    }
- 
-    when(idle_cycles1.value(7)){
-      for(i <- 0 until 32){
-        when(IsOlder(rob.io.rob_uop(i).rob_idx, rob.io.rob_pnr_idx, rob.io.rob_head_idx) || (rob.io.rob_uop(i).rob_idx === rob.io.rob_head_idx)){
-      when(rob.io.rob_uop(i).dst_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).dst_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).frs3_en === true.B){
-      fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      }
-     }
-    }
-  }
+
   
   val start = RegInit(false.B)
   val realstart = RegInit(false.B)
@@ -1776,7 +1728,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      }
   }
 
-    when(firstalluopnum === 4000000000L.U){
+   /* when(firstalluopnum === 4000000000L.U){
       printf(midas.targetutils.SynthesizePrintf(" 0-40billion time=%d\n",idle_cycles.value-starttime))
       printf(midas.targetutils.SynthesizePrintf(" alluopnum=%d\n",alluopnum))
       printf(midas.targetutils.SynthesizePrintf(" loaduopnum=%d\n",loaduopnum))
@@ -1795,7 +1747,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       printf(midas.targetutils.SynthesizePrintf(" disothertime=%d\n",disothertime))
    }
   
-   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") 
+   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") */
 
 
   if (usingFPU) {
