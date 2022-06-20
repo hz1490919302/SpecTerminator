@@ -1529,23 +1529,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   }
   assert (!(idle_cycles1.value(13)), "Pipeline has hung.")
   
-  
-  /*when(idle_cycles1.value(6) && idle_cycles1.value(2) && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){  // && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){
-       for(i <- 0 until numIntPhysRegs){
-            risk_table(i) := false.B
-            st_risk_table(i) := false.B
-            risk_table_interference(i) := false.B
-            st_risk_table_interference(i) := false.B
-       }
-       for(i <- 0 until numFpPhysRegs){
-            fp_risk_table(i) := false.B
-            st_fp_risk_table(i) := false.B
-            fp_risk_table_interference(i) := false.B
-            st_fp_risk_table_interference(i) := false.B
-       }
-  }*/
-
-
    when(idle_cycles1.value(6) && idle_cycles1.value(4)){
        for(i <- 0 until numIntPhysRegs){
            when(((0x1L.U << i) & rob.io.pdstintmask) === 0.U){
@@ -1608,58 +1591,8 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
             }
        }
-
    }
  
-    when(idle_cycles1.value(7)){
-      for(i <- 0 until 32){
-        when(IsOlder(rob.io.rob_uop(i).rob_idx, rob.io.rob_pnr_idx, rob.io.rob_head_idx) || (rob.io.rob_uop(i).rob_idx === rob.io.rob_head_idx)){
-      when(rob.io.rob_uop(i).dst_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).dst_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).frs3_en === true.B){
-      fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      }
-     }
-    }
-  }
-  
   val start = RegInit(false.B)
   val realstart = RegInit(false.B)
   val starttime = RegInit(0.U(40.W))
@@ -1725,18 +1658,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      when(rob.io.commit.arch_valids(w) && start && realstart){
 
           myuop := rob.io.commit.uops(w).uopc
-          /*when(rob.io.commit.uops(w).dst_rtype === RT_FLT){
-              fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              st_fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-              st_fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-          }
-          when(rob.io.commit.uops(w).dst_rtype === RT_FIX){
-              risk_table(rob.io.commit.uops(w).pdst) := false.B
-              st_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-              st_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-          }*/
 
           val temp = alluopnum
           alluopnum := temp + 1.U
@@ -1776,7 +1697,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      }
   }
 
-    when(firstalluopnum === 4000000000L.U){
+ /*   when(firstalluopnum === 4000000000L.U){
       printf(midas.targetutils.SynthesizePrintf(" 0-40billion time=%d\n",idle_cycles.value-starttime))
       printf(midas.targetutils.SynthesizePrintf(" alluopnum=%d\n",alluopnum))
       printf(midas.targetutils.SynthesizePrintf(" loaduopnum=%d\n",loaduopnum))
@@ -1795,7 +1716,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       printf(midas.targetutils.SynthesizePrintf(" disothertime=%d\n",disothertime))
    }
   
-   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") 
+   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") */
 
 
   if (usingFPU) {
