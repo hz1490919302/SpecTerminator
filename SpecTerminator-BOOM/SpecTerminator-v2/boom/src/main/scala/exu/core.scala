@@ -1703,7 +1703,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      }
   }
 
-    when(firstalluopnum === 4000000000L.U){
+   /* when(firstalluopnum === 4000000000L.U){
       printf(midas.targetutils.SynthesizePrintf(" 0-40billion time=%d\n",idle_cycles.value-starttime))
       printf(midas.targetutils.SynthesizePrintf(" alluopnum=%d\n",alluopnum))
       printf(midas.targetutils.SynthesizePrintf(" loaduopnum=%d\n",loaduopnum))
@@ -1722,7 +1722,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       printf(midas.targetutils.SynthesizePrintf(" disothertime=%d\n",disothertime))
    }
   //Test execution time from 1 billion instructions to 4 billion instructions
-   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") 
+   assert(!(firstalluopnum === 4000000002L.U), "40 billions:") */
 
 
   if (usingFPU) {
