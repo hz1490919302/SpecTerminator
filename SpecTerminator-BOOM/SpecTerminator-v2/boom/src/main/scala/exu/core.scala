@@ -1519,7 +1519,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
 
   // detect pipeline freezes and throw error
   val idle_cycles1 = freechips.rocketchip.util.WideCounter(32)
-  val max_idle = RegInit(0.U(32.W))
 
   when (rob.io.commit.valids.asUInt.orR ||
         csr.io.csr_stall ||
@@ -1529,22 +1528,11 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   }
   assert (!(idle_cycles1.value(13)), "Pipeline has hung.")
   
-  
-  /*when(idle_cycles1.value(6) && idle_cycles1.value(2) && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){  // && myuop =/= uopSFENCE && myuop =/= uopERET && myuop =/= uopWFI && myuop =/= uopNOP && myuop =/= uopFENCE){
-       for(i <- 0 until numIntPhysRegs){
-            risk_table(i) := false.B
-            st_risk_table(i) := false.B
-            risk_table_interference(i) := false.B
-            st_risk_table_interference(i) := false.B
-       }
-       for(i <- 0 until numFpPhysRegs){
-            fp_risk_table(i) := false.B
-            st_fp_risk_table(i) := false.B
-            fp_risk_table_interference(i) := false.B
-            st_fp_risk_table_interference(i) := false.B
-       }
-  }*/
-
+//When running large workloads (hundreds of millions of instructions), due to the overly sophisticated BOOM, 
+//enabling the tlb delay defense may cause the pipeline to hang by the possibility that some registers that should be decontaminated have not been decontaminated.
+//Therefore, we provide a solution: when an instruction has not been committed after 80 cycles fromthe last commit (all instructions in Spectre gadget 
+//are committed within 60 cycles from the last commit), we clear the destination registers of the instructions that have failed, generated exceptions, 
+//or been predicated in the ROB, and clear the source registers of the instructions that have been executed (rob_bsy,rob_unsafe).
 
    when(idle_cycles1.value(6) && idle_cycles1.value(4)){
        for(i <- 0 until numIntPhysRegs){
@@ -1608,57 +1596,9 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
             }
        }
-
    }
- 
-    when(idle_cycles1.value(7)){
-      for(i <- 0 until 32){
-        when(IsOlder(rob.io.rob_uop(i).rob_idx, rob.io.rob_pnr_idx, rob.io.rob_head_idx) || (rob.io.rob_uop(i).rob_idx === rob.io.rob_head_idx)){
-      when(rob.io.rob_uop(i).dst_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).dst_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX){
-      risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT){
-      fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-      }
-      when(rob.io.rob_uop(i).frs3_en === true.B){
-      fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-      fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-      }
-     }
-    }
-  }
+  
+  // Start firesim performance test
   
   val start = RegInit(false.B)
   val realstart = RegInit(false.B)
@@ -1725,19 +1665,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
      when(rob.io.commit.arch_valids(w) && start && realstart){
 
           myuop := rob.io.commit.uops(w).uopc
-          /*when(rob.io.commit.uops(w).dst_rtype === RT_FLT){
-              fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              st_fp_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-              st_fp_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-          }
-          when(rob.io.commit.uops(w).dst_rtype === RT_FIX){
-              risk_table(rob.io.commit.uops(w).pdst) := false.B
-              st_risk_table(rob.io.commit.uops(w).pdst) := false.B
-              risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-              st_risk_table_interference(rob.io.commit.uops(w).pdst) := false.B
-          }*/
-
           val temp = alluopnum
           alluopnum := temp + 1.U
 
@@ -1794,7 +1721,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       printf(midas.targetutils.SynthesizePrintf(" disbrjalrtime=%d\n",disbrjalrtime))
       printf(midas.targetutils.SynthesizePrintf(" disothertime=%d\n",disothertime))
    }
-  
+  //Test execution time from 1 billion instructions to 4 billion instructions
    assert(!(firstalluopnum === 4000000002L.U), "40 billions:") 
 
 
