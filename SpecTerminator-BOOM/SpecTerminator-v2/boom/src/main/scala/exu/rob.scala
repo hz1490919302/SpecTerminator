@@ -424,7 +424,7 @@ class Rob(
       val prs3_wuran = Mux(rob_uop(i).frs3_en, io.st_fp_risk_table(rob_uop(i).prs3), false.B)
       val noload = rob_uop(i).risk4 && !prs1_wuran && !prs2_wuran && !prs3_wuran
       //no-load untaint
-      when((rob_uop(i).risk4 || rob_uop(i).risk3) && ( (rob_uop(i).uses_ldq && load_can_clear) || (!rob_uop(i).uses_ldq && no_load_can_clear) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.st_risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.st_fp_risk_table(rob_uop(i).pdst) === true.B)) ){    
+      when((rob_uop(i).risk4 || rob_uop(i).risk3) && ( (rob_uop(i).uses_ldq && load_can_clear) || IsOlder(rob_uop_mask.rob_idx, rob_pnr_idx, rob_head_idx) || (!rob_uop(i).uses_ldq && no_load_can_clear) ) && ((rob_uop(i).dst_rtype === RT_FIX && io.st_risk_table(rob_uop(i).pdst) === true.B) || (rob_uop(i).dst_rtype === RT_FLT && io.st_fp_risk_table(rob_uop(i).pdst) === true.B)) ){    
         val index_pdst = Mux(rob_uop(i).dst_rtype === RT_FLT,rob_uop(i).pdst + numIntPhysRegs.U,rob_uop(i).pdst)
         clear_st_risk_table(index_pdst) := 1.U
         val index_pdst1 = Mux(rob_uop(i).lrs1_rtype === RT_FLT,rob_uop(i).prs1 + numIntPhysRegs.U,Mux(rob_uop(i).lrs1_rtype === RT_FIX,rob_uop(i).prs1,0.U))
