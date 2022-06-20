@@ -316,7 +316,7 @@ class NBDTLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge
     for (w <- 0 until memWidth) {
       when (io.req(w).fire() && tlb_miss(w) && state === s_ready) {
         state := s_request
-        when(!io.store_risk_tlb(w) && !io.load_risk(w)){
+        when(!io.store_risk_tlb(w) && !io.load_risk(w)){  
         r_refill_tag := vpn(w)
 
         r_superpage_repl_addr := replacementEntry(superpage_entries, superpage_plru.way)

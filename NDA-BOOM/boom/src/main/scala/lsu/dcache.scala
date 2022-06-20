@@ -630,6 +630,20 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
 
   val s2_req   = RegNext(s1_req)
   val s2_type  = RegNext(s1_type)
+
+
+  
+val pdst_risk = widthMap(w => Mux(s1_req(w).uop.dst_rtype === RT_FIX, io.lsu.risk_table(s1_req(w).uop.pdst), Mux(s1_req(w).uop.dst_rtype === RT_FLT, io.lsu.fp_risk_table(s1_req(w).uop.pdst), false.B) ))
+val prs1_risk = widthMap(w => Mux(s1_req(w).uop.lrs1_rtype === RT_FIX, io.lsu.risk_table(s1_req(w).uop.prs1), Mux(s1_req(w).uop.lrs1_rtype === RT_FLT, io.lsu.fp_risk_table(s1_req(w).uop.prs1), false.B) ))
+val prs2_risk = widthMap(w => Mux(s1_req(w).uop.lrs2_rtype === RT_FIX, io.lsu.risk_table(s1_req(w).uop.prs2), Mux(s1_req(w).uop.lrs2_rtype === RT_FLT, io.lsu.fp_risk_table(s1_req(w).uop.prs2), false.B) ))
+val prs3_risk = widthMap(w => Mux(s1_req(w).uop.frs3_en, io.lsu.fp_risk_table(s1_req(w).uop.prs3), false.B))
+val pdst_risk_st = widthMap(w => Mux(s1_req(w).uop.dst_rtype === RT_FIX, io.lsu.st_risk_table(s1_req(w).uop.pdst), Mux(s1_req(w).uop.dst_rtype === RT_FLT, io.lsu.st_fp_risk_table(s1_req(w).uop.pdst), false.B) ))
+val prs1_risk_st = widthMap(w => Mux(s1_req(w).uop.lrs1_rtype === RT_FIX, io.lsu.st_risk_table(s1_req(w).uop.prs1), Mux(s1_req(w).uop.lrs1_rtype === RT_FLT, io.lsu.st_fp_risk_table(s1_req(w).uop.prs1), false.B) ))
+val prs2_risk_st = widthMap(w => Mux(s1_req(w).uop.lrs2_rtype === RT_FIX, io.lsu.st_risk_table(s1_req(w).uop.prs2), Mux(s1_req(w).uop.lrs2_rtype === RT_FLT, io.lsu.st_fp_risk_table(s1_req(w).uop.prs2), false.B) ))
+val prs3_risk_st = widthMap(w => Mux(s1_req(w).uop.frs3_en, io.lsu.st_fp_risk_table(s1_req(w).uop.prs3), false.B))
+
+
+
   val s2_valid = widthMap(w =>
                   RegNext(s1_valid(w) &&
                          !io.lsu.s1_kill(w) &&
@@ -761,7 +775,7 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
                             !(io.lsu.exception && s2_req(w).uop.uses_ldq)   &&
                              (isPrefetch(s2_req(w).uop.mem_cmd) ||
                               isRead(s2_req(w).uop.mem_cmd)     ||
-                              isWrite(s2_req(w).uop.mem_cmd)) &&  true.B
+                              isWrite(s2_req(w).uop.mem_cmd)) && true.B
                            //  !( (prs1_risk || prs2_risk || prs3_risk) && pdst_risk ) &&
                            //  !( (prs1_risk_st || prs2_risk_st || prs3_risk_st) && pdst_risk_st )
    
@@ -890,7 +904,7 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
       (isPrefetch(s2_req(w).uop.mem_cmd) ||
         isRead(s2_req(w).uop.mem_cmd)     ||
         isWrite(s2_req(w).uop.mem_cmd)) && false.B
-       // ((pdst_risk && (prs1_risk || prs2_risk || prs3_risk)) || (pdst_risk_st && (prs1_risk_st || prs2_risk_st || prs3_risk_st)) )
+        //((pdst_risk && (prs1_risk || prs2_risk || prs3_risk)) || (pdst_risk_st && (prs1_risk_st || prs2_risk_st || prs3_risk_st)) )
  )
     {
       io.lsu.nack(w).valid := true.B
