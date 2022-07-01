@@ -1554,41 +1554,12 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
            }
-           when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
-              risk_table(rob.io.rob_uop(i).prs1) := false.B
-              st_risk_table(rob.io.rob_uop(i).prs1) := false.B
-              risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-              st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-           }
-           when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
-              risk_table(rob.io.rob_uop(i).prs2) := false.B
-              st_risk_table(rob.io.rob_uop(i).prs2) := false.B
-              risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-              st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-           }
-           when(rob.io.rob_uop(i).frs3_en === true.B && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
-              fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-              st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
-              fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-              st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-           }
+
             when(rob.io.rob_uop(i).dst_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){
               fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
               st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
               fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
-            }
-            when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
-              fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-              st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
-              fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-              st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
-            }
-            when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
-              fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-              st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
-              fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-              st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
             }
        }
    }
