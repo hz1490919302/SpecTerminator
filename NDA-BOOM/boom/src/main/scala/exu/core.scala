@@ -1529,7 +1529,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   }
   assert (!(idle_cycles1.value(13)), "Pipeline has hung.")
   
-   when(idle_cycles1.value(6) && idle_cycles1.value(4)){
+   when(idle_cycles1.value(6) && idle_cycles1.value(2)){
        for(i <- 0 until numIntPhysRegs){
            when(((0x1L.U << i) & rob.io.pdstintmask) === 0.U){
               risk_table(i) := false.B
@@ -1554,12 +1554,41 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
            }
-
+	     when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              risk_table(rob.io.rob_uop(i).prs1) := false.B
+              st_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+              st_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+           }
+           when(rob.io.rob_uop(i).lrs2_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              risk_table(rob.io.rob_uop(i).prs2) := false.B
+              st_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+              st_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+           }
+           when(rob.io.rob_uop(i).frs3_en === true.B && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
+           }
             when(rob.io.rob_uop(i).dst_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){
               fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
               st_fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
               fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
+            }
+	      when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
+            }
+            when(rob.io.rob_uop(i).lrs2_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+              fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
+              fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
+              st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
             }
        }
    }
