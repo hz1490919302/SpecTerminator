@@ -489,9 +489,9 @@ class Rob(
     io.fufdiv_interference := (0 until numRobRows).map{ i => rob_val(i) && rob_uop(i).fu_code === 128.U && rob_bsy(i) && ((rob_uop(i).dst_rtype === RT_FIX && io.risk_table(rob_uop(i).pdst) === false.B) || (rob_uop(i).dst_rtype === RT_FLT && io.fp_risk_table(rob_uop(i).pdst) === false.B ))  }.reduce(_||_) =/= 0.U
   
       
-    io.pdstintmask := (0 until numRobRows).map{i => (rob_val(i) && rob_unsafe(i) && !rob_exception(i) && !rob_predicated(i) && rob_bsy(i) && rob_uop(i).dst_rtype === RT_FIX) << rob_uop(i).pdst }.reduce(_|_)
+    io.pdstintmask := (0 until numRobRows).map{i => (rob_val(i) && !rob_exception(i) && !rob_predicated(i) && rob_uop(i).dst_rtype === RT_FIX) << rob_uop(i).pdst }.reduce(_|_)
 
-    io.pdstfpmask := (0 until numRobRows).map{i => (rob_val(i) && rob_unsafe(i) && !rob_exception(i) && !rob_predicated(i) && rob_bsy(i) && rob_uop(i).dst_rtype === RT_FLT) << rob_uop(i).pdst }.reduce(_|_)
+    io.pdstfpmask := (0 until numRobRows).map{i => (rob_val(i) && !rob_exception(i) && !rob_predicated(i) && rob_uop(i).dst_rtype === RT_FLT) << rob_uop(i).pdst }.reduce(_|_)
     //-----------------------------------------------
     // Accruing fflags
     for (i <- 0 until numFpuPorts) {
