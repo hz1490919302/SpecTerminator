@@ -1565,13 +1565,13 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
        }
       
        for(i <- 0 until 32){
-             when(rob.io.rob_uop(i).dst_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){//
+           when(rob.io.rob_uop(i).dst_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){//
               risk_table(rob.io.rob_uop(i).pdst) := false.B
               st_risk_table(rob.io.rob_uop(i).pdst) := false.B
               risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
            }
-	   /*when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+	   when(rob.io.rob_uop(i).lrs1_rtype === RT_FIX && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
               risk_table(rob.io.rob_uop(i).prs1) := false.B
               st_risk_table(rob.io.rob_uop(i).prs1) := false.B
               risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
@@ -1588,7 +1588,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               st_fp_risk_table(rob.io.rob_uop(i).prs3) := false.B
               fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
               st_fp_risk_table_interference(rob.io.rob_uop(i).prs3) := false.B
-           }*/
+           }
            
             when(rob.io.rob_uop(i).dst_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_predicated(i) === true.B || rob.io.rob_exception(i) === true.B)){
               fp_risk_table(rob.io.rob_uop(i).pdst) := false.B
@@ -1596,7 +1596,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
               st_fp_risk_table_interference(rob.io.rob_uop(i).pdst) := false.B
             }
-	      /* when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
+	     when(rob.io.rob_uop(i).lrs1_rtype === RT_FLT && rob.io.rob_val(i) && (rob.io.rob_bsy(i) === false.B || rob.io.rob_unsafe(i) === false.B)){
               fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
               st_fp_risk_table(rob.io.rob_uop(i).prs1) := false.B
               fp_risk_table_interference(rob.io.rob_uop(i).prs1) := false.B
@@ -1607,7 +1607,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
               st_fp_risk_table(rob.io.rob_uop(i).prs2) := false.B
               fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
               st_fp_risk_table_interference(rob.io.rob_uop(i).prs2) := false.B
-            }*/
+            }
        }
 
    }
